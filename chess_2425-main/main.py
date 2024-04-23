@@ -32,18 +32,35 @@ def convert_step(step: str) -> tuple | Exception:
         raise Exception('Неверный формат строки')
     return int(n), ord(s) - ord('A') + 1
 
+def check(board, color, king_pos):# неработает
+    for row in range(1, 9):
+        for col in range(1, 9):
+            piece = board.get_piece(row, col)
+            if piece is not None and piece.color == color:
+                if piece.can_move(board, row, col, *king_pos):
+                    return False
+    return True
+
+def mate(board, color, king_pos):# неработает
+    offsets = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, 1), (1, 1), (1, -1), (-1, -1),(0, 0)]
+    result = 0
+    for row in range(1, 9):
+        for col in range(1, 9):
+            piece = board.get_piece(row, col)
+            if piece is not None and piece.color == color:
+                for offset in offsets:
+                    row_1, col_1 = king_pos[0] + offset[0], king_pos[1] + offset[1]
+                    if 0 < row_1 > 9 or 0 < col_1 > 9:
+                        result += 1
+                        continue
+                    if piece.can_move(board, row, col, row_1, col_1) or board.get_piece(row_1, col_1) is not None:
+                        result += 1
+    return True if result == 9 else False
 
 def main():
     board = Board()
-
-    def steps(step):
-        row, col = step[0]
-        pawn = Pawn('0')
-        if str(board.get_piece(row, col))[1] == 'P' and pawn.true_move(step):
-            return True
-        else:
-            raise Exception('Так ходить нельзя')
-    
+    white_king = (1, 5)
+    black_king = (8, 5)
     while True:
         print_board(board)
         print('Команды:')
@@ -59,10 +76,31 @@ def main():
         command = command.split()
         if len(command) == 3 and command[0] == 'move':
             try:
-                start = convert_step(command[1])
-                end = convert_step(command[2])
-                if steps((start, end)):
-                    board.__field = board.move(start, end)
+                row, col = convert_step(command[1])
+                row_1, col_1 = convert_step(command[2])
+
+                if (row, col) == white_king:
+                    white_king = (row_1, col_1)
+                elif (row, col) == black_king:
+                    black_king = (row_1, col_1)
+
+                if board.move_piece(row, col, row_1, col_1):
+                    print('Ход успешен')
+                else:
+                    print('Неверные координаты. Попробуйте другой ход')
+                
+                figure = board.get_piece(row_1, col_1)
+                if figure.color == Color.WHITE and figure.can_move(board, row_1, col_1, *black_king):
+                    if check(board, Color.BLACK, black_king) and mate(board, Color.WHITE, black_king):
+                            return 'Игра окончена. Победили Белые.'
+                    else:
+                        print('Вам Шах, Господин. Бегите.')
+                elif figure.color == Color.BLACK and figure.can_move(board, row_1, col_1, *white_king):
+                    if check(board, Color.WHITE, white_king) and mate(board, Color.BLACK, white_king):
+                            return 'Игра окончена. Победили Чёрные.'
+                    else:
+                        print('Вам Шах, Господин. Бегите.')
+                
             except Exception as err:
                 print('Ошибка:', err)
             finally:
@@ -70,4 +108,4 @@ def main():
         print('Неверная команда. Повторите снова')
 
 
-main()
+print(main())

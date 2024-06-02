@@ -24,4 +24,3 @@ class Piece:
     @abstractmethod
     def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
         pass
-    
